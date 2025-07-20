@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shushant Dahal</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Fredoka+One&family=Inter:wght@400;700&family=Shadows+Into+Light&display=swap" rel="stylesheet">
+    <style>
+        /* --- Font Imports --- */
+        @import url('https://fonts.googleapis.com/css?family=Roboto:400,700');
+
+        /* --- Basic Setup --- */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFDFB;
+            color: #1a1a1a;
+            overflow: hidden; /* Prevents scrollbars from the canvas */
+            cursor: none; /* Hide the default cursor */
+        }
+
+        ::selection {
+            color: #fff;
+            background: #9FBE5A;
+        }
+
+        /* --- Custom Cursor --- */
+        .custom-cursor {
+            width: 20px;
+            height: 20px;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: transform 0.1s ease-out;
+        }
+
+        .custom-cursor::before,
+        .custom-cursor::after {
+            content: '';
+            position: absolute;
+            background-color: #1a1a1a;
+        }
+
+        .custom-cursor::before {
+            width: 100%;
+            height: 2px;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+        }
+
+        .custom-cursor::after {
+            width: 2px;
+            height: 100%;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* --- Animated Background Canvas --- */
+        #universe-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        /* --- Main Title --- */
+        .main-text-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            z-index: 2;
+            pointer-events: none; /* Allows clicks to go through to the canvas */
+        }
+
+        .main-text-container h1 {
+            font-family: 'Dancing Script', cursive;
+            font-size: clamp(5rem, 12vw, 10rem); /* Responsive font size */
+            font-weight: 700;
+            color: #1a1a1a;
+            text-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            pointer-events: auto; /* Makes the text selectable */
+        }
+        
+        /* --- Alien Bot --- */
+        .alien-bot-container {
+            position: fixed;
+            bottom: -10px; 
+            left: -70px; /* Starts off-screen */
+            width: 120px;
+            height: 120px;
+            z-index: 1000;
+            transition: left 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            animation: peek-a-boo 10s infinite ease-in-out 3s;
+            cursor: pointer;
+        }
+
+        @keyframes peek-a-boo {
+            0%, 80%, 100% { left: -70px; }
+            90%, 95% { left: -120px; } /* Peeks out and hides back */
+        }
+
+        .alien-bot-container.active {
+            left: -8px; /* Slides into view when active */
+            animation: none; /* Stops peeking animation */
+        }
+
+        .alien-character {
+            width: 120px;
+            height: 120px;
+            position: relative;
+        }
+
+        .alien-label {
+            position: absolute;
+            top: -30px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-family: 'Dancing Script', cursive;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #333;
+            text-shadow: 0 1px 2px rgba(255,255,255,0.7);
+            pointer-events: none;
+            transition: transform 0.5s ease;
+        }
+
+        .alien-bot-container.active .alien-label {
+            transform: translateY(-35px);
+        }
+        
+        #alien-img {
+            width: 100%;
+            height: auto;
+            transform-origin: bottom center;
+            transition: transform 0.5s ease;
+            filter: drop-shadow(3px 3px 5px rgba(0,0,0,0.2));
+        }
+
+        .alien-bot-container.active #alien-img {
+            transform: scale(1.2) translateY(-20px); /* Bounces up when active */
+        }
+
+        /* --- Footer --- */
+        .footer {
+            position: fixed;
+            bottom: 2px;
+            width: 100%;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #999;
+            z-index: 10;
+        }
+
+        /* --- ROAST ME NOTEBOOK STYLES --- */
+        .roast-box-container {
+            position: fixed;
+            bottom: 20px;
+            left: 115px; /* Default for desktop and larger */
+            z-index: 1001;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px);
+            transition: opacity 0.4s ease, visibility 0.4s ease, transform 0.4s ease;
+        }
+
+        .roast-box-container.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .notebook-wrapper {
+            position: relative; /* Needed for absolute positioning of close button */
+            display: flex;
+            width: 100%;
+            max-width: 250px; /* Default for desktop and larger */
+            margin: 0 auto;
+            box-shadow: 0 0 15px 4px rgba(50, 50, 50, 0.25), 0 12px 28px 0 rgba(0, 0, 0, 0.2), 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+            border-radius: 9px;
+            overflow: hidden;
+        }
+
+        .notebook-edge {
+            flex: 0 0 0px; /* Removed the ripped edge visual */
+        }
+        
+        .form__contact {
+           flex-grow: 1;
+           background-color: #fff;
+        }
+        
+        .form__contact fieldset {
+            position: relative; 
+            margin: 0;
+            padding: 22px 40px 15px 30px;
+            border: none;
+            font: 18px 'Shadows Into Light', cursive;
+            --line-height: 32px;
+            background: #fff linear-gradient(rgba(0, 0, 0, 0.08) 1px, transparent 0) 0 22px / 100% var(--line-height);
+            height: 150px; /* Reduced height */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; 
+        }
+        
+        .form__contact fieldset:after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 15px;
+            width: 0;
+            border-left: 2px double #E08183;
+        }
+        
+        .form__contact p {
+            margin: 0 0 var(--line-height) 0;
+            line-height: var(--line-height);
+            color: #333;
+        }
+        
+        .form__contact .form-question {
+            margin-bottom: 0;
+        }
+
+        .form__field {
+            display: inline-block;
+            vertical-align: middle;
+            color: #7DB665;
+            outline: none;
+            font-weight: bold;
+            min-width: 150px;
+        }
+        
+        .form__field:empty {
+            color: #DDD;
+            font-weight: normal;
+        }
+        
+        .form__field:empty:before,
+        .form__contact .form__field:empty:focus:before {
+            content: attr(data-placeholder);
+        }
+
+        .form__contact button {
+            position: absolute;
+            bottom: 10px;
+            right: 25px;
+            border: none;
+            font-size: 16px;
+            font-family: 'Shadows Into Light', cursive;
+            color: #8e44ad;
+            background: transparent;
+            cursor: pointer;
+            transition: transform 0.25s ease;
+        }
+        
+        .form__contact button:hover {
+            transform: translateX(10px);
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .step {
+            width: 100%;
+            text-align: center;
+        }
+
+        .step.step-centered {
+            flex-grow: 1; 
+            display: flex;
+            align-items: center; 
+            justify-content: center; 
+        }
+        
+        .loader {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Shadows Into Light', cursive;
+            font-size: 20px;
+            color: #999;
+            gap: 10px;
+        }
+
+        .spinner {
+            animation: rotate 2s linear infinite;
+            width: 16px;
+            height: 16px;
+        }
+
+        .spinner .path {
+            stroke: #8e44ad;
+            stroke-linecap: round;
+            animation: dash 1.5s ease-in-out infinite;
+        }
+
+        .result-container {
+            line-height: 1.4;
+            color: #c0392b;
+            font-weight: bold;
+            font-size: 17px;
+            font-family: 'Shadows Into Light', cursive;
+            padding-bottom: 30px; 
+            max-height: 100%;
+            overflow-y: auto;
+        }
+        
+        #restart-button {
+            position: absolute;
+            bottom: 10px;
+            right: 25px;
+        }
+
+        .close-button {
+            position: absolute;
+            top: -17px;
+            right: -9.5px;
+            background: none;
+            border: none;
+            font-family: 'Shadows Into Light', cursive;
+            font-size: 40px;
+            line-height: 1;
+            color: #ccc;
+            cursor: pointer;
+            padding: 5px 10px; 
+            z-index: 10;
+            transition: color 0.2s ease;
+        }
+        .close-button:hover {
+            color: #888;
+        }
+
+        @keyframes rotate {
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes dash {
+            0% { stroke-dasharray: 1, 150; stroke-dashoffset: 0; }
+            50% { stroke-dasharray: 90, 150; stroke-dashoffset: -35; }
+            100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; }
+        }
+
+        /* Responsive adjustments for Alien Bot */
+        @media (max-width: 768px) { /* For tablets and smaller */
+            .alien-bot-container {
+                bottom: 0px; /* Move alien up */
+                left: -70px; /* Adjust slightly for tablets */
+                width: 90px; /* Slightly smaller */
+                height: 100px;
+            }
+            .alien-bot-container.active {
+                left: -5px; /* Adjust active position for smaller screens */
+            }
+            .alien-label {
+                top: -49px; /* Move label up to clear alien */
+                font-size: 1.2rem; /* Smaller label */
+            }
+            .alien-bot-container.active .alien-label {
+                transform: translateY(-20px); /* Adjusted for new position */
+            }
+            #alien-img {
+                transform: scale(1.1) translateY(-15px); /* Smaller bounce */
+            }
+
+            /* Responsive adjustments for Roast Box */
+            .roast-box-container {
+                left: 20%; /* Center horizontally */
+                transform: translateX(-50%);
+                width: 90%; /* Take up more width */
+                max-width: 250px; /* Allow it to be slightly wider */
+                bottom: 20px; /* Move roast box up to clear alien */
+            }
+            .form__contact fieldset {
+                padding: 20px 20px 15px 20px; /* Adjust padding */
+                height: 160px; /* Slightly more height for content */
+            }
+            .form__contact button {
+                right: 15px; /* Adjust button position */
+            }
+            #restart-button {
+                right: 15px;
+            }
+        }
+
+        @media (max-width: 480px) { /* For phones */
+            /* Hide custom cursor on mobile */
+            .custom-cursor {
+                display: none;
+            }
+
+            .alien-bot-container {
+                bottom: 0px; /* Move alien up */
+                left: -70px; /* Adjust slightly for tablets */
+                width: 50px; /* Slightly smaller */
+                height: 100px;
+            }
+
+            @keyframes peek-a-boo-mobile {
+                0%, 80%, 100% { left: -50px; } /* Start further left */
+                90%, 95% { left: -50px; } /* Peeks out and hides back for mobile, further left */
+            }
+
+            .alien-bot-container.active {
+                left: -5px; /* Adjust active position for smaller screens */
+            }
+            .alien-label {
+                top: -40px; /* Move label up to clear alien */
+                font-size: 1rem; /* Smaller label */
+            }
+            .alien-bot-container.active .alien-label {
+                transform: translateY(-20px); /* Adjusted for new position */
+            }
+            #alien-img {
+                transform: scale(1.1) translateY(-15px); /* Smaller bounce */
+            }
+
+            /* Responsive adjustments for Roast Box */
+            .roast-box-container {
+                left: 38%;
+                transform: translateX(-50%);
+                width: 58%; /* Even smaller width */
+                max-width: 200px; /* Significantly smaller max-width */
+            }
+            #restart-button {
+                bottom: 3px;
+                right: 7px;
+            }
+            .loader {
+                font-size: 10px; /* Smaller loader text */
+                gap: 5px;
+            }
+            .spinner {
+                width: 14px; /* Smaller spinner */
+                height: 14px;
+            }
+            .result-container {
+                font-size: 10px; /* Smaller result font */
+                padding-bottom: 10px;
+            }
+            .close-button {
+                font-size: 22px; /* Smaller close button */
+                top: -5px;
+                right: -3px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="custom-cursor"></div>
+    <canvas id="universe-canvas"></canvas>
+
+    <div class="main-text-container">
+        <h1>Shushant Dahal</h1>
+    </div>
+
+    <div class="alien-bot-container" id="alien-bot">
+        <div class="alien-character">
+            <div class="alien-label">Roast Me!</div>
+            <img id="alien-img" src="https://media.giphy.com/media/3o7aD2d7hy9ktXNDP2/giphy.gif" alt="Animated Alien Character">
+        </div>
+    </div>
+
+    <!-- Roast Me Notebook Form -->
+    <div class="roast-box-container" id="roast-box">
+        <div class="notebook-wrapper">
+             <button type="button" id="close-roast-box" class="close-button">&times;</button>
+            <div class="notebook-edge"></div>
+            <form class="form__contact" id="roast-form">
+                <fieldset>
+                    <!-- Step 1: Input -->
+                    <div id="step-1-input" class="step">
+                        <p class="form-question">What's your name?</p>
+                        <p><span id="name-input" class="form__field" data-placeholder="Enter name" tabindex="1" contenteditable></span></p>
+                        <button id="submit-button" type="submit" tabindex="2">Get Roasted &#187;</button>
+                    </div>
+
+                    <!-- Step 2: Loader -->
+                    <div id="step-2-loader" class="step step-centered hidden">
+                        <div class="loader">
+                            <svg class="spinner" viewBox="0 0 50 50"><circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle></svg>
+                            ANALYZING...
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Result -->
+                    <div id="step-3-result" class="step step-centered hidden">
+                        <div id="result-text" class="result-container"></div>
+                        <button id="restart-button" type="button">&#187;</button>
+                    </div>
+                </fieldset>
+            </form>
+        </div>
+    </div>
+
+
+    <footer class="footer">
+        <span>© 2025. All rights reserved.</span>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- GLOBAL TIMERS ---
+            let roastDisappearTimer;
+            let inactivityTimer;
+
+            // --- PORTFOLIO SCRIPT ---
+            const cursor = document.querySelector('.custom-cursor');
+            window.addEventListener('mousemove', e => {
+                cursor.style.left = e.clientX + 'px';
+                cursor.style.top = e.clientY + 'px';
+            });
+
+            // --- UNIVERSE CANVAS ---
+            const canvas = document.getElementById('universe-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            let mouseCoords = { x: null, y: null, radius: 150 };
+            let particles = [];
+            let distantStars = [];
+
+            window.addEventListener('mousemove', (event) => {
+                mouseCoords.x = event.x;
+                mouseCoords.y = event.y;
+            });
+
+            class Particle {
+                constructor(x, y, dirX, dirY, size, color) {
+                    this.x = x; this.y = y; this.dirX = dirX; this.dirY = dirY;
+                    this.size = size; this.color = color; this.baseSize = size;
+                    this.pulseFactor = Math.random() * 0.002 + 0.001;
+                }
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
+                    ctx.fillStyle = this.color;
+                    ctx.fill();
+                }
+                update() {
+                    if (this.x > canvas.width || this.x < 0) this.dirX = -this.dirX;
+                    if (this.y > canvas.height || this.y < 0) this.dirY = -this.dirY;
+                    this.x += this.dirX; this.y += this.dirY;
+                    this.size = this.baseSize + Math.sin(Date.now() * this.pulseFactor) * 0.5;
+                    this.draw();
+                }
+            }
+            
+            class DistantStar {
+                constructor() {
+                    this.baseRadius = Math.random() * 2.5 + 1;
+                    this.radius = this.baseRadius;
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.velocity = { x: (Math.random() - 0.5) * 0.05, y: (Math.random() - 0.5) * 0.05 };
+                    this.color = `rgba(0,0,0,${Math.random() * 0.4 + 0.1})`;
+                    this.pulseFactor = Math.random() * 0.001;
+                }
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, Math.abs(this.radius), 0, Math.PI * 2);
+                    ctx.fillStyle = this.color;
+                    ctx.fill();
+                }
+                update() {
+                    this.x += this.velocity.x;
+                    this.y += this.velocity.y;
+                    this.radius = this.baseRadius + Math.sin(Date.now() * this.pulseFactor) * 0.2;
+                    if (this.x < -this.radius) this.x = canvas.width + this.radius;
+                    if (this.x > canvas.width + this.radius) this.x = -this.radius;
+                    if (this.y < -this.radius) this.y = canvas.height + this.radius;
+                    if (this.y > canvas.height + this.radius) this.y = -this.radius;
+                    this.draw();
+                }
+            }
+            
+            function connectParticles() {
+                for (let a = 0; a < particles.length; a++) {
+                    let distanceToMouse = Math.hypot(particles[a].x - mouseCoords.x, particles[a].y - mouseCoords.y);
+                    if (distanceToMouse < mouseCoords.radius) {
+                        ctx.strokeStyle = `rgba(0,0,0,${0.8 - distanceToMouse / mouseCoords.radius})`;
+                        ctx.lineWidth = 1.5;
+                        ctx.beginPath();
+                        ctx.moveTo(mouseCoords.x, mouseCoords.y);
+                        ctx.lineTo(particles[a].x, particles[a].y);
+                        ctx.stroke();
+                    }
+                    for (let b = a; b < particles.length; b++) {
+                        let distance = Math.hypot(particles[a].x - particles[b].x, particles[a].y - particles[b].y);
+                        if (distance < 120) {
+                            ctx.strokeStyle = `rgba(0,0,0,${0.6 - distance / 120})`;
+                            ctx.lineWidth = 1.2;
+                            ctx.beginPath();
+                            ctx.moveTo(particles[a].x, particles[a].y);
+                            ctx.lineTo(particles[b].x, particles[b].y);
+                            ctx.lineTo(particles[b].x, particles[b].y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+
+            function animateUniverse() {
+                requestAnimationFrame(animateUniverse);
+                ctx.clearRect(0, 0, innerWidth, innerHeight);
+                distantStars.forEach(obj => obj.update());
+                particles.forEach(p => p.update());
+                connectParticles();
+            }
+
+            function initUniverse() {
+                particles = [];
+                distantStars = [];
+                let particleCount = (canvas.width * canvas.height) / 9000;
+                for (let i = 0; i < particleCount; i++) {
+                    let size = Math.random() * 2.5 + 1;
+                    let x = Math.random() * innerWidth; let y = Math.random() * innerHeight;
+                    let dirX = (Math.random() * 0.4) - 0.2; let dirY = (Math.random() * 0.4) - 0.2;
+                    particles.push(new Particle(x, y, dirX, dirY, size, 'rgba(0,0,0,0.8)'));
+                }
+                for (let i = 0; i < 70; i++) {
+                    distantStars.push(new DistantStar());
+                }
+            }
+
+            window.addEventListener('resize', () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                mouseCoords.radius = 150;
+                initUniverse();
+            });
+            
+            initUniverse();
+            animateUniverse();
+
+            // --- ALIEN ROAST BOT & ROAST BOX SCRIPT ---
+            const alienBot = document.getElementById('alien-bot');
+            const roastBox = document.getElementById('roast-box');
+            const closeRoastBoxButton = document.getElementById('close-roast-box');
+            const form = document.getElementById('roast-form');
+            const nameInput = document.getElementById('name-input');
+            const step1 = document.getElementById('step-1-input');
+            const step2 = document.getElementById('step-2-loader');
+            const step3 = document.getElementById('step-3-result');
+            const resultText = document.getElementById('result-text');
+            const restartButton = document.getElementById('restart-button');
+
+            function showStep(stepToShow) {
+                step1.classList.add('hidden');
+                step2.classList.add('hidden');
+                step3.classList.add('hidden');
+                stepToShow.classList.remove('hidden');
+            }
+
+            function closeRoastBox() {
+                alienBot.classList.remove('active');
+                roastBox.classList.remove('visible');
+                clearTimeout(inactivityTimer);
+                clearTimeout(roastDisappearTimer);
+                nameInput.innerText = '';
+                showStep(step1); // Always reset to step1 when closing the box
+            }
+
+            function resetInactivityTimer() {
+                clearTimeout(inactivityTimer);
+                // Only set inactivity timer if the roast box is visible and we are on the name input step
+                if (roastBox.classList.contains('visible') && !step1.classList.contains('hidden')) {
+                    inactivityTimer = setTimeout(closeRoastBox, 10000); // 10 seconds
+                }
+            }
+
+            alienBot.addEventListener('click', (e) => {
+                e.stopPropagation();
+                alienBot.classList.toggle('active');
+                roastBox.classList.toggle('visible');
+                if (roastBox.classList.contains('visible')) {
+                    resetInactivityTimer(); // Start/reset timer when box becomes visible
+                } else {
+                    closeRoastBox(); // Close and clear timers when box becomes hidden
+                }
+            });
+
+            closeRoastBoxButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                closeRoastBox();
+            });
+
+            window.addEventListener('click', (event) => {
+                if (!alienBot.contains(event.target) && !roastBox.contains(event.target)) {
+                    closeRoastBox();
+                }
+            });
+
+            // --- ROAST ME FORM SCRIPT ---
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const name = nameInput.innerText.trim();
+                if (!name) {
+                    nameInput.innerText = '';
+                    nameInput.focus();
+                    return;
+                }
+                showStep(step2);
+                clearTimeout(inactivityTimer); // Pause inactivity timer when moving to step2
+
+                const prompt = `
+                    Generate a single, dark, witty, and highly sarcastic roast for the name "${name}".
+                    The roast should be a single, punchy sentence under 25 words.
+                    Base it on an imaginative or absurd scenario (like a medical side effect, a failed magic spell, a corporate nightmare, a bad omen, or a ghostly annoyance).
+                    Do not be genuinely cruel.
+                    Example style: "Shreyan sounds like a software update that only changes the terms of service."
+                `;
+
+                try {
+                    let chatHistory = [];
+                    chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                    const payload = { contents: chatHistory };
+                    const apiKey = ""; // API key is handled by the environment
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) throw new Error(`API error: ${response.statusText}`);
+                    const result = await response.json();
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        const roast = result.candidates[0].content.parts[0].text;
+                        resultText.innerText = roast;
+                    } else {
+                        throw new Error('Unexpected API response format.');
+                    }
+                } catch (error) {
+                    console.error('Error fetching roast:', error);
+                    resultText.innerText = 'Sorry, the roast machine is broken. Try again later.';
+                } finally {
+                    showStep(step3);
+                    clearTimeout(roastDisappearTimer); // Ensure any previous roast timer is cleared
+                    roastDisappearTimer = setTimeout(() => {
+                        if (!step3.classList.contains('hidden')) { // Only retract if still on step3
+                            closeRoastBox(); // Directly retract and hide
+                        }
+                    }, 15000); // 15 seconds for roast response page
+                }
+            });
+            
+            restartButton.addEventListener('click', function() {
+                clearTimeout(roastDisappearTimer);
+                nameInput.innerText = '';
+                showStep(step1);
+                resetInactivityTimer(); // Restart 10s timer for step1
+            });
+            
+            nameInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                }
+            });
+
+            // Reset inactivity timer on user actions within the roast box
+            // This will only set the timer if step1 is active due to the check in resetInactivityTimer
+            nameInput.addEventListener('input', resetInactivityTimer);
+
+            // Reset inactivity timer on general user actions (mouse, keyboard, touch)
+            // This will only set the timer if step1 is active due to the check in resetInactivityTimer
+            ['mousemove', 'mousedown', 'keypress', 'touchstart'].forEach(evt => 
+                window.addEventListener(evt, resetInactivityTimer, false)
+            );
+        });
+    </script>
+
+</body>
+</html>
