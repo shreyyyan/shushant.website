@@ -735,8 +735,11 @@
                     let chatHistory = [];
                     chatHistory.push({ role: "user", parts: [{ text: prompt }] });
                     const payload = { contents: chatHistory };
-                    const apiKey = "AQ.Ab8RN6LcWJzWsi8HQvXPnBqxCU1z3ffcd6LKwjQkcWYj5SoZ5w"; // API key is handled by the environment
-                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`;
+                    // Ensure your API key looks exactly like a clean string (starts with AIzaSy...)
+                    const apiKey = "AIzaSyYourActualKeyGoesHereWithoutAnySpaces"; 
+
+                    // Use the correct stable production model URL string
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
                     const response = await fetch(apiUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
